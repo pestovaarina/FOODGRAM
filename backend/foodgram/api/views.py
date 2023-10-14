@@ -1,5 +1,4 @@
 from django.db.models import Sum
-from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -159,11 +158,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredients = IngredientRecipe.objects.filter(
             recipe__shopping_cart__user=request.user
             ).values(
-            'ingredient__name', 'ingredient__measurement_unit'
-            ).order_by(
-                'ingredient__name'
-            ).annotate(
-                total_amount=Sum('amount'))
+                'ingredient__name', 'ingredient__measurement_unit'
+                ).order_by(
+                    'ingredient__name'
+                    ).annotate(total_amount=Sum('amount'))
         content_list = []
         for ingredient in ingredients:
             content_list.append(
