@@ -157,11 +157,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Позволяет текущему пользователю скачать список покупок."""
         ingredients = IngredientRecipe.objects.filter(
             recipe__shopping_cart__user=request.user
-            ).values(
-                'ingredient__name', 'ingredient__measurement_unit'
-                ).order_by(
-                    'ingredient__name'
-                    ).annotate(total_amount=Sum('amount'))
+        ).values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).order_by(
+            'ingredient__name'
+        ).annotate(total_amount=Sum('amount'))
         content_list = []
         for ingredient in ingredients:
             content_list.append(
