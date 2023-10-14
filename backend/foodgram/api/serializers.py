@@ -4,7 +4,6 @@ from djoser.serializers import UserSerializer, UserCreateSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
 from users.models import User, Subscription
 from recipes.models import (Tag, Ingredient, Recipe, IngredientRecipe,
