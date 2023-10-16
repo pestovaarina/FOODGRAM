@@ -1,13 +1,13 @@
 import base64
-
-from djoser.serializers import UserSerializer, UserCreateSerializer
-from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
+from typing import OrderedDict
 
 from django.core.files.base import ContentFile
-from users.models import User, Subscription
-from recipes.models import (Tag, Ingredient, Recipe, IngredientRecipe,
-                            Shopping_cart, Favorite)
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            Shopping_cart, Tag)
+from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
+from users.models import Subscription, User
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -29,7 +29,7 @@ class CustomUserSerializer(UserSerializer):
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
                   'is_subscribed')
 
-    def get_is_subscribed(self, obj):
+    def get_is_subscribed(self, obj: Subscription) -> bool:
         """Функция для проверки подписки текущего
         пользователя на автора аккаунта."""
         request = self.context.get('request')
@@ -82,7 +82,7 @@ class IngredientRecipeAddSerializer(serializers.ModelSerializer):
 class Base64ImageField(serializers.ImageField):
     """Сериализатор для работы с изображениями."""
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: str) -> str:
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
             ext = format.split('/')[-1]
@@ -106,18 +106,18 @@ class RecipeSerializer(serializers.ModelSerializer):
                   'is_in_shopping_cart', 'name', 'image', 'text',
                   'cooking_time')
 
-    def get_ingredients(self, obj):
+    def get_ingredients(self, obj: Recipe) -> dict:
         ingredients = IngredientRecipe.objects.filter(recipe=obj)
         return IngredientRecipeSerializer(ingredients, many=True).data
 
-    def get_is_favorited(self, obj):
+    def get_is_favorited(self, obj: Recipe) -> bool:
         """Проверяет, добавил ли текущий пользователь рецепт в избанное."""
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
         return request.user.favorite.filter(recipe=obj).exists()
 
-    def get_is_in_shopping_cart(self, obj):
+    def get_is_in_shopping_cart(self, obj: Recipe) -> bool:
         """Проверяет, добавил ли текущий пользователь
         рецепт в список покупок."""
         request = self.context.get('request')
@@ -141,7 +141,7 @@ class RecipeCreateSerializer(RecipeSerializer):
                   'is_in_shopping_cart', 'name', 'image', 'text',
                   'cooking_time')
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Проверяем, что рецепт содержит уникальные ингредиенты
         и их количество не меньше 1."""
         ingredients = self.initial_data.get('ingredients')
@@ -159,11 +159,6 @@ class RecipeCreateSerializer(RecipeSerializer):
     @staticmethod
     def add_ingredient(ingredients, recipe):
         """Добавляет ингредиент."""
-        # for i in ingredients:
-        #     ingredient = Ingredient.objects.get(id=i['id'])
-        #     IngredientRecipe.objects.create(
-        #         ingredient=ingredient, recipe=recipe, amount=i['amount']
-        #     )
         ingredients_list = []
         for ingredient in ingredients:
             current_ingredient = ingredient['id']
@@ -177,7 +172,7 @@ class RecipeCreateSerializer(RecipeSerializer):
             )
         IngredientRecipe.objects.bulk_create(ingredients_list)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Recipe:
         """Функция для создания рецепта."""
         author = self.context.get('request').user
         ingredients = validated_data.pop('ingredients')
@@ -187,7 +182,7 @@ class RecipeCreateSerializer(RecipeSerializer):
         self.add_ingredient(ingredients, recipe)
         return recipe
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Recipe, validated_data: dict) -> Recipe:
         """Функция для изменения рецепта."""
         recipe = instance
         instance.name = validated_data.get('name', instance.name)
@@ -204,7 +199,7 @@ class RecipeCreateSerializer(RecipeSerializer):
         instance.save()
         return instance
 
-    def to_representation(self, recipe):
+    def to_representation(self, recipe: Recipe) -> dict:
         """Определяет какой сериализатор будет использоваться для чтения."""
         serializer = RecipeSerializer(recipe)
         return serializer.data
@@ -237,7 +232,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             )
         ]
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Проверяем, что пользователь не подписывается на самого себя."""
         if data['subscriber'] == data['author']:
             raise serializers.ValidationError(
@@ -264,7 +259,7 @@ class SubscriptionShowSerializer(CustomUserSerializer):
             'recipes_count'
         )
 
-    def get_recipes_count(self, object):
+    def get_recipes_count(self, object: User) -> int:
         return object.recipes.count()
 
 

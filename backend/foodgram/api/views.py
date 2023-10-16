@@ -1,23 +1,23 @@
 from django.db.models import Sum
-from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets, permissions
+from django_filters.rest_framework import DjangoFilterBackend
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            Shopping_cart, Tag)
+from requests import Request
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from users.models import Subscription, User
 
-from recipes.models import (Ingredient, Recipe, Tag, Favorite,
-                            Shopping_cart, IngredientRecipe)
-from users.models import User, Subscription
-
-from .filters import RecipeFilter, IngredientSearchFilter
-from .permissions import IsAuthorOrAdminOrReadOnly
-from .serializers import (IngredientSerializer,
-                          RecipeSerializer, TagSerializer,
-                          SubscriptionShowSerializer, SubscriptionSerializer,
-                          FavoriteSerializer, RecipeMiniSerializer,
-                          ShoppingCartSerializer, RecipeCreateSerializer)
+from .filters import IngredientSearchFilter, RecipeFilter
 from .pagination import CustomPagination
+from .permissions import IsAuthorOrAdminOrReadOnly
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          RecipeCreateSerializer, RecipeMiniSerializer,
+                          RecipeSerializer, ShoppingCartSerializer,
+                          SubscriptionSerializer, SubscriptionShowSerializer,
+                          TagSerializer)
 
 
 class SubscribtionViewSet(viewsets.GenericViewSet):
@@ -30,7 +30,7 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
         url_path='subscribe',
         permission_classes=(IsAuthorOrAdminOrReadOnly, )
     )
-    def get_subscribe(self, request, pk):
+    def get_subscribe(self, request: Request, pk: int) -> Response:
         """Позволяет пользователю подписываться и отписываться от авторов."""
         author = get_object_or_404(User, pk=pk)
         if request.method == 'POST':
@@ -57,7 +57,7 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
         url_path='subscriptions',
         permission_classes=(permissions.IsAuthenticated, )
     )
-    def get_subscriptions(self, request):
+    def get_subscriptions(self, request: Request) -> Response:
         """Отображение подписок."""
         queryset = User.objects.filter(author__subscriber=request.user)
         paginator = CustomPagination()
@@ -106,7 +106,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='favorite',
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def get_favorite(self, request, pk):
+    def get_favorite(self, request: Request, pk: int) -> Response:
         """Позволяет текущему пользователю добавлять рецепты в избранное."""
         recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == 'POST':
@@ -129,7 +129,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart',
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def get_shopping_cart(self, request, pk):
+    def get_shopping_cart(self, request: Request, pk: int) -> Response:
         """Позволяет текущему пользователю добавлять рецепты
         в список покупок."""
         recipe = get_object_or_404(Recipe, pk=pk)
@@ -153,7 +153,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart',
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def download_shopping_cart(self, request):
+    def download_shopping_cart(self, request: Request) -> HttpResponse:
         """Позволяет текущему пользователю скачать список покупок."""
         ingredients = IngredientRecipe.objects.filter(
             recipe__shopping_cart__user=request.user

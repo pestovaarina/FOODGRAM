@@ -1,8 +1,7 @@
 import os
-
 from pathlib import Path
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,9 +9,9 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY', default='token')
 
-DEBUG = os.getenv('DEBUG', default=False)
+DEBUG = os.getenv('DEBUG', default=True)
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='localhost').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,6 +27,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
+    'colorfield',
 ]
 
 MIDDLEWARE = [
@@ -122,7 +122,6 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',
         'user': 'api.serializers.CustomUserSerializer',
         'current_user': 'api.serializers.CustomUserSerializer', },
     'HIDE_USERS': False,
@@ -131,3 +130,5 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
         'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly']}
 }
+
+PAGE_SIZE = os.getenv('PAGE_SIZE')
