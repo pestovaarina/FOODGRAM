@@ -1,5 +1,4 @@
 import base64
-from typing import OrderedDict
 
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
