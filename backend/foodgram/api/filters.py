@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+
 from recipes.models import Ingredient, Recipe, Tag
 
 
@@ -25,9 +26,8 @@ class RecipeFilter(filters.FilterSet):
 
     def get_is_favorited(self, queryset, name, value):
         """Показывает рецепты, добавленные в избранное."""
-        user = self.request.user
         if value:
-            return queryset.filter(favorite__user=user)
+            return queryset.filter(favorite__user=self.request.user)
         return queryset
 
     def get_is_in_shopping_cart(self, queryset, name, value):

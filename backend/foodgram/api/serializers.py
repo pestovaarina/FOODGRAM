@@ -1,11 +1,13 @@
 import base64
+from typing import Any
 
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                            Shopping_cart, Tag)
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            Shopping_cart, Tag)
 from users.models import Subscription, User
 
 
@@ -31,7 +33,7 @@ class CustomUserSerializer(UserSerializer):
     def get_is_subscribed(self, obj: Subscription) -> bool:
         """Функция для проверки подписки текущего
         пользователя на автора аккаунта."""
-        request = self.context.get('request')
+        request: Any | None = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
         return obj.author.filter(subscriber=request.user).exists()
@@ -106,12 +108,13 @@ class RecipeSerializer(serializers.ModelSerializer):
                   'cooking_time')
 
     def get_ingredients(self, obj: Recipe) -> dict:
+        """Функция отображения ингредиентов в рецепте."""
         ingredients = IngredientRecipe.objects.filter(recipe=obj)
         return IngredientRecipeSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj: Recipe) -> bool:
         """Проверяет, добавил ли текущий пользователь рецепт в избанное."""
-        request = self.context.get('request')
+        request: Any | None = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
         return request.user.favorite.filter(recipe=obj).exists()
@@ -119,7 +122,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj: Recipe) -> bool:
         """Проверяет, добавил ли текущий пользователь
         рецепт в список покупок."""
-        request = self.context.get('request')
+        request: Any | None = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
         return request.user.shopping_cart.filter(recipe=obj).exists()
@@ -143,8 +146,8 @@ class RecipeCreateSerializer(RecipeSerializer):
     def validate(self, data: dict) -> dict:
         """Проверяем, что рецепт содержит уникальные ингредиенты
         и их количество не меньше 1."""
-        ingredients = self.initial_data.get('ingredients')
-        ingredient_list = []
+        ingredients: list = self.initial_data.get('ingredients')
+        ingredient_list: list = []
         for ingredient in ingredients:
             if int(ingredient['amount']) <= 0:
                 raise serializers.ValidationError(
@@ -158,7 +161,7 @@ class RecipeCreateSerializer(RecipeSerializer):
     @staticmethod
     def add_ingredient(ingredients, recipe):
         """Добавляет ингредиент."""
-        ingredients_list = []
+        ingredients_list: list = []
         for ingredient in ingredients:
             current_ingredient = ingredient['id']
             current_amount = ingredient['amount']
@@ -173,10 +176,10 @@ class RecipeCreateSerializer(RecipeSerializer):
 
     def create(self, validated_data: dict) -> Recipe:
         """Функция для создания рецепта."""
-        author = self.context.get('request').user
-        ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
-        recipe = Recipe.objects.create(author=author, **validated_data)
+        author: Any = self.context.get('request').user
+        ingredients: list = validated_data.pop('ingredients')
+        tags: list = validated_data.pop('tags')
+        recipe: Recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.add(*tags)
         self.add_ingredient(ingredients, recipe)
         return recipe
