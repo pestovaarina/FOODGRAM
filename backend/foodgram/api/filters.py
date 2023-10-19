@@ -7,7 +7,7 @@ class RecipeFilter(filters.FilterSet):
     """Фильтрация рецептов по определенным полям."""
 
     author = filters.AllValuesMultipleFilter(
-        field_name='author__username',
+        field_name='author__id',
         label='Автор')
     tags = filters.ModelMultipleChoiceFilter(
         field_name='tags__slug',
@@ -26,16 +26,21 @@ class RecipeFilter(filters.FilterSet):
 
     def get_is_favorited(self, queryset, name, value):
         """Показывает рецепты, добавленные в избранное."""
-        if value:
-            return queryset.filter(favorite__user=self.request.user)
-        return queryset
+        if self.request.user.is_authenticated:
+            if value:
+                return queryset.filter(favorite__user=self.request.user)
+            return queryset
+        else:
+            return queryset
 
     def get_is_in_shopping_cart(self, queryset, name, value):
         """Показывает рецепты, добавленные в список покупок."""
-        user = self.request.user
-        if value:
-            return queryset.filter(shopping_cart__user=user)
-        return queryset
+        if self.request.user.is_authenticated:
+            if value:
+                return queryset.filter(shopping_cart__user=self.request.user)
+            return queryset
+        else:
+            return queryset
 
 
 class IngredientSearchFilter(filters.FilterSet):

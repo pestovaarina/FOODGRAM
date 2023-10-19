@@ -128,7 +128,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
-        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly']}
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly']}
 }
 
 PAGE_SIZE = os.getenv('PAGE_SIZE')

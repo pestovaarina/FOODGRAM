@@ -6,6 +6,11 @@
 
 Проект «Фудграм» — сайт, на котором пользователи могут публиковать рецепты, добавлять чужие рецепты в избранное и подписываться на публикации других авторов. Пользователям сайта также доступен сервис «Список покупок». Он позволяет создавать список продуктов, которые нужно купить для приготовления выбранных блюд.
 
+## Вход в админку
+
+email: admin@yandex.ru
+password: admin
+
 #### Технологи
 
 - Python 3.9
@@ -77,7 +82,7 @@ docker-compose exec backend cp -r /app/static/. /static/
 ## Заполнение базы данными
 
 ```
-docker-compose exec backend python manage.py loaddata db.json 
+docker-compose exec backend python manage.py loaddata dump.json 
 ```
 ## Об авторе
 Пестова Арина Витальевна

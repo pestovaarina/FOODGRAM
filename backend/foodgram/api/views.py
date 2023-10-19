@@ -24,12 +24,13 @@ from .serializers import (FavoriteSerializer, IngredientSerializer,
 class SubscribtionViewSet(viewsets.GenericViewSet):
     serializer_class = SubscriptionSerializer
     queryset = User.objects.all()
+    permission_classes = (IsAuthorOrAdminOrReadOnly, )
 
     @action(
         detail=True,
         methods=['POST', 'DELETE'],
         url_path='subscribe',
-        permission_classes=(IsAuthorOrAdminOrReadOnly, )
+        permission_classes=(permissions.IsAuthenticated,)
     )
     def get_subscribe(self, request: Request, pk: int) -> Response:
         """Позволяет пользователю подписываться и отписываться от авторов."""
@@ -97,7 +98,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeCreateSerializer
-    permission_classes = [IsAuthorOrAdminOrReadOnly, ]
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,
+                          IsAuthorOrAdminOrReadOnly)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
@@ -109,8 +111,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_favorite(self, request: Request, pk: int) -> Response:
         """Позволяет текущему пользователю добавлять рецепты в избранное."""
-        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == 'POST':
+            try:
+                recipe: Recipe = get_object_or_404(Recipe, pk=pk)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer = FavoriteSerializer(
                 data={'user': request.user.id, 'recipe': recipe.id}
             )
@@ -119,8 +124,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             show_favorite_serializer = RecipeMiniSerializer(recipe)
             return Response(
                 show_favorite_serializer.data, status=status.HTTP_201_CREATED)
-        favorite_recipe: Favorite = get_object_or_404(
-            Favorite, user=request.user, recipe=recipe)
+        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            favorite_recipe: Favorite = get_object_or_404(
+                Favorite, user=request.user, recipe=recipe)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         favorite_recipe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -130,11 +139,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart',
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def get_shopping_cart(self, request: Request, pk: int) -> Response:
+    def get_shopping_cart(self, request: Request, pk: int):
         """Позволяет текущему пользователю добавлять рецепты
         в список покупок."""
-        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == 'POST':
+            try:
+                recipe: Recipe = get_object_or_404(Recipe, pk=pk)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer = ShoppingCartSerializer(
                 data={'user': request.user.id, 'recipe': recipe.id}
             )
@@ -143,8 +155,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             show_cart_serializer = RecipeMiniSerializer(recipe)
             return Response(
                 show_cart_serializer.data, status=status.HTTP_201_CREATED)
-        shopping_cart_recipe: Shopping_cart = get_object_or_404(
-            Shopping_cart, user=request.user, recipe=recipe)
+        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            shopping_cart_recipe: Shopping_cart = get_object_or_404(
+                Shopping_cart, user=request.user, recipe=recipe)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         shopping_cart_recipe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

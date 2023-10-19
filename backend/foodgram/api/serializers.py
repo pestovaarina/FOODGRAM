@@ -146,6 +146,12 @@ class RecipeCreateSerializer(RecipeSerializer):
     def validate(self, data: dict) -> dict:
         """Проверяем, что рецепт содержит уникальные ингредиенты
         и их количество не меньше 1."""
+        if not data.get('ingredients'):
+            raise serializers.ValidationError(
+                'Нужно добавить хотя бы 1 ингредиент!')
+        if not data.get('tags'):
+            raise serializers.ValidationError(
+                'Нужно добавить хотя бы 1 тег!')
         ingredients: list = self.initial_data.get('ingredients')
         ingredient_list: list = []
         for ingredient in ingredients:
@@ -157,6 +163,14 @@ class RecipeCreateSerializer(RecipeSerializer):
             raise serializers.ValidationError(
                 'Ингредиенты не должны повторяться.')
         return data
+
+    def validate_tags(self, tags: dict) -> dict:
+        """Проверяем, что рецепт содержит уникальные теги."""
+        if len(tags) != len(set(tags)):
+            raise serializers.ValidationError(
+                'Теги рецепта должны быть уникальными'
+            )
+        return tags
 
     @staticmethod
     def add_ingredient(ingredients, recipe):
@@ -245,7 +259,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class SubscriptionShowSerializer(CustomUserSerializer):
     """Сериализатор отображения подписок."""
 
-    recipes = RecipeMiniSerializer(read_only=True, many=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -260,6 +274,15 @@ class SubscriptionShowSerializer(CustomUserSerializer):
             'recipes',
             'recipes_count'
         )
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes = Recipe.objects.filter(author=obj)
+        limit = request.query_params.get('recipes_limit')
+        if limit:
+            recipes = recipes[:int(limit)]
+        return RecipeMiniSerializer(
+            recipes, many=True, context={'request': request}).data
 
     def get_recipes_count(self, object: User) -> int:
         return object.recipes.count()

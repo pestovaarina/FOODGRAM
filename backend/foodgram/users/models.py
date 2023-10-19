@@ -14,12 +14,10 @@ class User(AbstractUser):
         validators=[validate_username])
     first_name = models.CharField(
         'Имя',
-        max_length=150,
-        blank=True)
+        max_length=150)
     last_name = models.CharField(
         'Фамилия',
-        max_length=150,
-        blank=True)
+        max_length=150)
     email = models.EmailField(
         'Электронная почта',
         max_length=254,
