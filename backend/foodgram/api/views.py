@@ -34,8 +34,11 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
     )
     def get_subscribe(self, request: Request, pk: int) -> Response:
         """Позволяет пользователю подписываться и отписываться от авторов."""
-        author: User = get_object_or_404(User, pk=pk)
         if request.method == 'POST':
+            try:
+                author: User = get_object_or_404(User, pk=pk)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer = SubscriptionSerializer(
                 data={'subscriber': request.user.id, 'author': author.id}
             )
@@ -47,9 +50,13 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
             return Response(
                 author_serializer.data, status=status.HTTP_201_CREATED
             )
-        subscription: Subscription = get_object_or_404(
-            Subscription, subscriber=request.user, author=author
-        )
+        author: User = get_object_or_404(User, pk=pk)
+        try:
+            subscription: Subscription = get_object_or_404(
+                Subscription, subscriber=request.user, author=author
+            )
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         subscription.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
