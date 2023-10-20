@@ -16,8 +16,7 @@ from .pagination import CustomPagination
 from .permissions import IsAuthorOrAdminOrReadOnly
 from .filters import IngredientSearchFilter, RecipeFilter
 from .serializers import (CustomUserSerializer, IngredientSerializer,
-                          RecipeCreateSerializer, RecipeMiniSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
+                          RecipeCreateSerializer, RecipeSerializer,
                           SubscriptionSerializer, SubscriptionShowSerializer,
                           TagSerializer)
 from .utils import delete_request, post_request
