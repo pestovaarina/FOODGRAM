@@ -2,6 +2,7 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from requests import Request
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -14,17 +15,26 @@ from users.models import Subscription, User
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrAdminOrReadOnly
 from .filters import IngredientSearchFilter, RecipeFilter
-from .serializers import (FavoriteSerializer, IngredientSerializer,
+from .serializers import (CustomUserSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeMiniSerializer,
                           RecipeSerializer, ShoppingCartSerializer,
                           SubscriptionSerializer, SubscriptionShowSerializer,
                           TagSerializer)
+from .utils import delete_request, post_request
 
 
-class SubscribtionViewSet(viewsets.GenericViewSet):
-    serializer_class = SubscriptionSerializer
+class CustomUserViewSet(UserViewSet):
+
+    serializer_class = CustomUserSerializer
     queryset = User.objects.all()
     permission_classes = (IsAuthorOrAdminOrReadOnly, )
+
+    def get_permissions(self) -> list:
+        """Запрещает неавторизованному пользователю
+        заходить на эндпоинт users/me/."""
+        if self.action == 'me':
+            self.permission_classes = (permissions.IsAuthenticated, )
+        return super().get_permissions()
 
     @action(
         detail=True,
@@ -32,13 +42,10 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
         url_path='subscribe',
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def get_subscribe(self, request: Request, pk: int) -> Response:
+    def get_subscribe(self, request: Request, id: int) -> Response:
         """Позволяет пользователю подписываться и отписываться от авторов."""
+        author: User = get_object_or_404(User, id=id)
         if request.method == 'POST':
-            try:
-                author: User = get_object_or_404(User, pk=pk)
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer = SubscriptionSerializer(
                 data={'subscriber': request.user.id, 'author': author.id}
             )
@@ -50,7 +57,6 @@ class SubscribtionViewSet(viewsets.GenericViewSet):
             return Response(
                 author_serializer.data, status=status.HTTP_201_CREATED
             )
-        author: User = get_object_or_404(User, pk=pk)
         try:
             subscription: Subscription = get_object_or_404(
                 Subscription, subscriber=request.user, author=author
@@ -119,26 +125,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_favorite(self, request: Request, pk: int) -> Response:
         """Позволяет текущему пользователю добавлять рецепты в избранное."""
         if request.method == 'POST':
-            try:
-                recipe: Recipe = get_object_or_404(Recipe, pk=pk)
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            serializer = FavoriteSerializer(
-                data={'user': request.user.id, 'recipe': recipe.id}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            show_favorite_serializer = RecipeMiniSerializer(recipe)
-            return Response(
-                show_favorite_serializer.data, status=status.HTTP_201_CREATED)
-        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
-        try:
-            favorite_recipe: Favorite = get_object_or_404(
-                Favorite, user=request.user, recipe=recipe)
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        favorite_recipe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            return post_request(self, Favorite, request, pk)
+        return delete_request(self, Favorite, request, pk)
 
     @action(
         detail=True,
@@ -150,26 +138,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Позволяет текущему пользователю добавлять рецепты
         в список покупок."""
         if request.method == 'POST':
-            try:
-                recipe: Recipe = get_object_or_404(Recipe, pk=pk)
-            except Exception:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            serializer = ShoppingCartSerializer(
-                data={'user': request.user.id, 'recipe': recipe.id}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            show_cart_serializer = RecipeMiniSerializer(recipe)
-            return Response(
-                show_cart_serializer.data, status=status.HTTP_201_CREATED)
-        recipe: Recipe = get_object_or_404(Recipe, pk=pk)
-        try:
-            shopping_cart_recipe: Shopping_cart = get_object_or_404(
-                Shopping_cart, user=request.user, recipe=recipe)
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        shopping_cart_recipe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            return post_request(self, Shopping_cart, request, pk)
+        return delete_request(self, Shopping_cart, request, pk)
 
     @action(
         detail=False,
